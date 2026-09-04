@@ -9,11 +9,14 @@ FastAPI gateway + Ollama for the SIH 26171 Aegis-Agent extension.
 # 1. Ollama daemon (install from https://ollama.com if missing)
 ollama serve   # or start the Ollama app
 
-# 2. Pull models (2b/4b local; 235b-cloud needs `ollama signin` first)
+# 2. Pull the models you want to test (see table below)
 ollama pull qwen3-vl:4b
 ollama pull qwen3-vl:2b
+ollama pull qwen3.5:4b
+ollama pull qwen3.5:2b
 ollama signin
-ollama pull qwen3-vl:235b-cloud   # optional, test-only
+ollama pull qwen3-vl:235b-cloud   # Ollama-cloud test model
+ollama pull gemma4:31b-cloud      # Ollama-cloud test model
 
 # 3. Gateway
 cd backend
@@ -49,12 +52,35 @@ VITE_SIH_QWEN_MODEL=qwen3-vl:4b
 
 Then `pnpm build`, reload the unpacked extension from `dist/`.
 
+## Model matrix
+
+| Tag | Role | Runtime |
+|---|---|---|
+| `qwen3-vl:2b` | primary (low latency) | local |
+| `qwen3-vl:4b` | primary (default) | local |
+| `qwen3.5:2b` | test | local |
+| `qwen3.5:4b` | test | local |
+| `qwen3-vl:235b-cloud` | test (quality reference) | Ollama cloud |
+| `gemma4:31b-cloud` | test | Ollama cloud |
+
+Cloud models require `ollama signin` on this laptop and bill through the signed-in
+account. The final demo stays on the 2b/4b local models — the test matrix exists
+to pick the best performer with recorded evidence.
+
 ## Switching models
 
-The gateway honors any model id listed in `QWEN_ALLOWED_MODELS` (see `.env.example`).
-To test a different model on the client: set `VITE_SIH_QWEN_MODEL=qwen3-vl:2b`
-(or `qwen3-vl:235b-cloud`), rebuild, reload. `qwen3-vl:235b-cloud` requires
-`ollama signin` on this laptop and runs via Ollama's cloud — test model only.
+Two ways, both client-side:
+
+1. **Allow-list (default)**: gateway honors any model id in `QWEN_ALLOWED_MODELS`
+   (`.env`). On the client laptop set `VITE_SIH_QWEN_MODEL=<tag>`, rebuild, reload.
+2. **Plug-and-play**: set `ALLOW_ANY_MODEL=true` in `.env` and restart the gateway —
+   any tag the client requests is forwarded as-is, so you can A/B tags without
+   touching the server again. Keep it `false` when you want a strict list.
+
+Add or remove tags in `QWEN_ALLOWED_MODELS` any time; it is plain env config,
+no code change. Note: non-VL models (e.g. `qwen3.5:2b/4b` without the `-vl`
+suffix) cannot read the sanitized screenshots the extension sends — they work
+for text-only steps but will fail vision steps. Keep that in mind when scoring.
 
 ## Repo layout
 

@@ -36,9 +36,11 @@ Python 3.11+. Windows PowerShell is the primary environment.
    Navigator / Validator are prompt roles of the same model, not separate
    services. Do not add another LLM.
 4. **Model allow-list**: `QWEN_ALLOWED_MODELS` env (default
-   `qwen3-vl:2b,qwen3-vl:4b,qwen3-vl:235b-cloud`). Client-requested model ids
-   in the list are honored; anything else silently remaps to `QWEN_MODEL`.
-   `qwen3-vl:235b-cloud` is a test-only Ollama cloud model (needs `ollama signin`).
+   `qwen3-vl:2b,qwen3-vl:4b,qwen3-vl:235b-cloud,qwen3.5:2b,qwen3.5:4b,gemma4:31b-cloud`).
+   Client-requested model ids in the list are honored; anything else silently
+   remaps to `QWEN_MODEL`. `ALLOW_ANY_MODEL=true` forwards any tag (plug-and-play
+   test mode). Cloud (`*-cloud`) models bill through the signed-in Ollama account;
+   do not make them the default. The final demo uses 2b/4b local.
 5. **Provider neutrality**: `QWEN_BACKEND=ollama|openai` switches the upstream
    without changing the client-facing API. Ollama is the default/offline mode.
 

@@ -115,7 +115,15 @@ Rules:
 |---|---|---|
 | `qwen3-vl:2b` | primary (low latency) | local |
 | `qwen3-vl:4b` | primary (default) | local |
-| `qwen3-vl:235b-cloud` | testing only | Ollama cloud; needs signin; higher quality reference |
+| `qwen3.5:2b` | test | local; text-only — cannot read sanitized screenshots |
+| `qwen3.5:4b` | test | local; text-only — cannot read sanitized screenshots |
+| `qwen3-vl:235b-cloud` | test (quality reference) | Ollama cloud; needs `ollama signin` |
+| `gemma4:31b-cloud` | test | Ollama cloud; needs `ollama signin` |
+
+The gateway's `QWEN_ALLOWED_MODELS` env is the source of truth for which tags
+the client may switch to; `ALLOW_ANY_MODEL=true` forwards any tag (plug-and-play).
+The final demo stays on 2b/4b local — the test matrix picks the winner with
+recorded latency/accuracy evidence.
 
 ## 6. Demo test plan (both laptops)
 

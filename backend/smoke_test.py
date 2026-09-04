@@ -21,6 +21,16 @@ def check(name: str, ok: bool, detail: str = "") -> None:
         sys.exit(1)
 
 
+EXPECTED_MODELS = [
+    "qwen3-vl:2b",
+    "qwen3-vl:4b",
+    "qwen3-vl:235b-cloud",
+    "qwen3.5:2b",
+    "qwen3.5:4b",
+    "gemma4:31b-cloud",
+]
+
+
 def main() -> None:
     with httpx.Client(timeout=120) as client:
         health = client.get(f"{BASE}/health")
@@ -30,12 +40,22 @@ def main() -> None:
         models = client.get(f"{BASE}/v1/models")
         ids = [m.get("id") for m in models.json().get("data", [])]
         check("models 200", models.status_code == 200, ", ".join(str(i) for i in ids))
-        check("2b/4b present", "qwen3-vl:2b" in ids and "qwen3-vl:4b" in ids)
 
+        # The gateway lists pulled models via Ollama (static allow-list only
+        # when the daemon is unreachable). Missing tags = not pulled yet.
+        present = [m for m in EXPECTED_MODELS if m in ids]
+        missing = [m for m in EXPECTED_MODELS if m not in ids]
+        check(
+            "at least one expected model available",
+            bool(present),
+            f"present: {present or 'none'}; not pulled yet: {missing or 'none'}",
+        )
+
+        default_model = health.json().get("model", "qwen3-vl:4b")
         chat = client.post(
             f"{BASE}/v1/chat/completions",
             json={
-                "model": "qwen3-vl:2b",
+                "model": default_model,
                 "messages": [{"role": "user", "content": "Reply with exactly: gateway-ok"}],
                 "max_tokens": 20,
                 "temperature": 0,
@@ -43,7 +63,7 @@ def main() -> None:
         )
         ok = chat.status_code == 200 and chat.json().get("choices")
         text = chat.json().get("choices", [{}])[0].get("message", {}).get("content", "") if ok else chat.text[:200]
-        check("chat completion 2b", bool(ok), str(text)[:120])
+        check(f"chat completion {default_model}", bool(ok), str(text)[:120])
 
         unknown = client.post(
             f"{BASE}/v1/chat/completions",
